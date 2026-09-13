@@ -13,5 +13,6 @@ This file provides guidance to agents when working with code in this repository.
 - Python scripts and agent instructions must be saved as UTF-8 without a BOM.
 - Unless a task explicitly specifies another platform, target Windows execution.
 - At the beginning of each script, configure the console for UTF-8 before emitting output.
+- Every Python script must include a comment with the source repository link: https://github.com/WS68/PythonScripts
 - All informational console messages and error messages must be in English. [`README.md`](README.md) is written in Russian and UTF-8.
 

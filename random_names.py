@@ -1,5 +1,7 @@
 """Generate random Russian surnames and gender-consistent full names."""
 
+# Source repository: https://github.com/WS68/PythonScripts
+
 from __future__ import annotations
 
 import argparse
