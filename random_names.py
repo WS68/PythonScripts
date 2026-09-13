@@ -26,6 +26,13 @@ CONSONANT_WEIGHTS: Final[tuple[float, ...]] = (
 VOWEL_WEIGHTS: Final[tuple[float, ...]] = (
     8.01, 8.45, 7.35, 10.97, 2.62, 0.32, 0.64, 2.01,
 )
+# Ordered consonant pairs that are too unnatural for generated Russian names.
+RARE_CONSONANT_PAIRS: Final[frozenset[str]] = frozenset({
+    "бж", "гж", "гз", "гц", "гш", "гщ", "жз", "жп", "жф",
+    "жх", "жц", "жщ", "кг", "кж", "кщ", "нж", "пж", "пщ", "фж",
+    "фщ", "хж", "хщ", "цж", "цщ", "чж", "чщ", "шж", "шщ", "щж",
+    "щш", "щц", "мп", "лн",
+})
 
 FIRST_PATTERNS: Final[tuple[str, ...]] = ("СГ", "ССГ", "СГСГ", "СГСГСГ", "ССГСГ")
 PENULTIMATE_PATTERNS: Final[tuple[str, ...]] = ("ССГС", "СГС")
@@ -66,7 +73,7 @@ FEMALE_PATRONYMICS: Final[tuple[str, ...]] = (
 
 
 def random_syllable(pattern: str, previous_letter: str = "") -> str:
-    """Build a syllable using letter frequencies and avoid adjacent duplicates."""
+    """Build a syllable while avoiding disallowed adjacent consonant pairs."""
     letters = []
     previous = previous_letter
     for symbol in pattern:
@@ -75,6 +82,7 @@ def random_syllable(pattern: str, previous_letter: str = "") -> str:
                 (letter, weight)
                 for letter, weight in zip(CONSONANTS, CONSONANT_WEIGHTS)
                 if letter != previous
+                and previous + letter not in RARE_CONSONANT_PAIRS
             )
             consonants, weights = zip(*available)
             letter = random.choices(consonants, weights=weights, k=1)[0]
