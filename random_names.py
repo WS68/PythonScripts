@@ -18,6 +18,14 @@ def configure_console() -> None:
 
 CONSONANTS: Final[str] = "бвгджзклмнпрстфхцчшщ"
 VOWELS: Final[str] = "аеиоуэюя"
+CONSONANT_WEIGHTS: Final[tuple[float, ...]] = (
+    1.59, 4.54, 1.70, 2.98, 0.94, 1.65, 3.49, 4.40, 3.21,
+    6.70, 2.81, 4.73, 5.47, 6.26, 0.26, 0.97, 0.48, 1.44,
+    0.73, 0.36,
+)
+VOWEL_WEIGHTS: Final[tuple[float, ...]] = (
+    8.01, 8.45, 7.35, 10.97, 2.62, 0.32, 0.64, 2.01,
+)
 
 FIRST_PATTERNS: Final[tuple[str, ...]] = ("СГ", "ССГ", "СГСГ", "СГСГСГ", "ССГСГ")
 PENULTIMATE_PATTERNS: Final[tuple[str, ...]] = ("ССГС", "СГС")
@@ -57,14 +65,25 @@ FEMALE_PATRONYMICS: Final[tuple[str, ...]] = (
 )
 
 
-def random_syllable(pattern: str) -> str:
-    """Build one syllable, drawing a random letter for every placeholder."""
+def random_syllable(pattern: str, previous_letter: str = "") -> str:
+    """Build a syllable using letter frequencies and avoid adjacent duplicates."""
     letters = []
+    previous = previous_letter
     for symbol in pattern:
         if symbol == "С":
-            letters.append(random.choice(CONSONANTS))
+            available = tuple(
+                (letter, weight)
+                for letter, weight in zip(CONSONANTS, CONSONANT_WEIGHTS)
+                if letter != previous
+            )
+            consonants, weights = zip(*available)
+            letter = random.choices(consonants, weights=weights, k=1)[0]
+            letters.append(letter)
+            previous = letter
         elif symbol == "Г":
-            letters.append(random.choice(VOWELS))
+            letter = random.choices(VOWELS, weights=VOWEL_WEIGHTS, k=1)[0]
+            letters.append(letter)
+            previous = letter
     return "".join(letters)
 
 
@@ -73,9 +92,9 @@ def generate_surname(female: bool) -> str:
     first_pattern = random.choice(FIRST_PATTERNS)
     penultimate_pattern = random.choice(PENULTIMATE_PATTERNS)
     first_part = random_syllable(first_pattern)
-    penultimate_part = random_syllable(penultimate_pattern)
+    penultimate_part = random_syllable(penultimate_pattern, first_part[-1:])
     ending = random.choice(("ина", "ова") if female else ("ин", "ов"))
-    return first_part + penultimate_part + ending
+    return (first_part + penultimate_part + ending).capitalize()
 
 
 def generate_person() -> dict[str, str]:
@@ -123,8 +142,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     configure_console()
     args = build_parser().parse_args()
-    lines = [" ".join(generate_person()[part] for part in args.format)
-             for _ in range(args.N)]
+    lines = []
+    for _ in range(args.N):
+        person = generate_person()
+        lines.append(" ".join(person[part] for part in args.format))
     try:
         with open(args.output, "w", encoding="utf-8", newline="\n") as output:
             output.write("\n".join(lines) + "\n")
