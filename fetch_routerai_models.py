@@ -7,18 +7,17 @@ saves the intermediate result to models_list.json, then extracts context length
 and pricing for each model and saves the final result to models_pricing.json
 and models_pricing.csv.
 
-Prices are recalculated to USD per 1M tokens.
+Prices are recalculated to per 1M tokens.
 
 Usage:
-    export OPENAI_API_KEY="your-api-key-here"
     python fetch_routerai_models.py
 """
+
+# Source repository: https://github.com/WS68/PythonScripts
 
 import csv
 import datetime
 import json
-import os
-import sys
 
 import requests
 
@@ -40,25 +39,9 @@ TOKENS_PER_MILLION = 1_000_000
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def get_api_key() -> str:
-    """Read the API key from the OPENAI_API_KEY environment variable."""
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        print(
-            "ERROR: Environment variable OPENAI_API_KEY is not set.\n"
-            "Set it before running the script, e.g.:\n"
-            '  export OPENAI_API_KEY="your-api-key-here"  (bash/zsh)\n'
-            '  $env:OPENAI_API_KEY = "your-api-key-here"  (PowerShell)',
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    return api_key
-
-
-def build_headers(api_key: str) -> dict:
-    """Build the Authorization headers for the OpenAI protocol."""
+def build_headers() -> dict:
+    """Build the headers for the OpenAI protocol."""
     return {
-        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
@@ -73,9 +56,9 @@ def save_json(data, filepath: str) -> None:
 # ---------------------------------------------------------------------------
 # API calls
 # ---------------------------------------------------------------------------
-def fetch_models_list(api_key: str) -> list:
+def fetch_models_list() -> list:
     """Fetch the list of models from the OpenAI-compatible endpoint."""
-    headers = build_headers(api_key)
+    headers = build_headers()
     print(f"Fetching models list from {MODELS_LIST_URL} ...")
     resp = requests.get(MODELS_LIST_URL, headers=headers, timeout=REQUEST_TIMEOUT)
     resp.raise_for_status()
@@ -92,7 +75,7 @@ def fetch_models_list(api_key: str) -> list:
 # ---------------------------------------------------------------------------
 def normalize_to_per_1m(price, unit) -> float | None:
     """
-    Normalize a price to USD per 1M tokens.
+    Normalize a price to per 1M tokens.
 
     The API reports prices per token (pricing_units = "token").
     If the unit already indicates per-1M, the value is used as-is.
@@ -214,10 +197,8 @@ def save_pricing_csv(records: list, filepath: str) -> None:
 # Main
 # ---------------------------------------------------------------------------
 def main() -> None:
-    api_key = get_api_key()
-
     # Step 1: fetch the models list and save the intermediate result.
-    models = fetch_models_list(api_key)
+    models = fetch_models_list()
     save_json(models, MODELS_LIST_FILE)
 
     # Step 2: extract context length and pricing for each model.
