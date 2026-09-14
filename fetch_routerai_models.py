@@ -166,7 +166,11 @@ def extract_pricing_info(model: dict) -> dict | None:
 # Output
 # ---------------------------------------------------------------------------
 def save_pricing_csv(records: list, filepath: str) -> None:
-    """Save the final pricing records to a CSV file."""
+    """Save the final pricing records to a CSV file.
+
+    Records where any of context_length, input_per_1m_tokens or
+    output_per_1m_tokens is empty are skipped.
+    """
     fieldnames = [
         "provider",
         "model",
@@ -175,25 +179,35 @@ def save_pricing_csv(records: list, filepath: str) -> None:
         "input_per_1m_tokens",
         "output_per_1m_tokens",
     ]
+    skipped = 0
     with open(filepath, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for record in records:
+            context_length = record.get("context_length")
+            input_per_1m = record.get("pricing", {}).get("input_per_1m_tokens")
+            output_per_1m = record.get("pricing", {}).get("output_per_1m_tokens")
+
+            # Skip records with any missing value among the three key fields.
+            if (
+                context_length in (None, "")
+                or input_per_1m in (None, "")
+                or output_per_1m in (None, "")
+            ):
+                skipped += 1
+                continue
+
             writer.writerow(
                 {
                     "provider": record.get("provider", ""),
                     "model": record.get("model", ""),
                     "created": record.get("created", ""),
-                    "context_length": record.get("context_length", ""),
-                    "input_per_1m_tokens": (
-                        record.get("pricing", {}).get("input_per_1m_tokens", "")
-                    ),
-                    "output_per_1m_tokens": (
-                        record.get("pricing", {}).get("output_per_1m_tokens", "")
-                    ),
+                    "context_length": context_length,
+                    "input_per_1m_tokens": input_per_1m,
+                    "output_per_1m_tokens": output_per_1m,
                 }
             )
-    print(f"Saved: {filepath}")
+    print(f"Saved: {filepath} ({skipped} records skipped due to missing values)")
 
 
 # ---------------------------------------------------------------------------
